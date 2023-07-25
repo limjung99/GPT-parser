@@ -1,8 +1,9 @@
 import struct
+import sys
 import uuid
 _GPT_HEADER_STRUCT = "<8s4sIIIQQQQ16sQIII" # little endian
 _GPT_HEADER_SIZE = struct.calcsize(_GPT_HEADER_STRUCT)
-_GPT_ENTRY_STRUCT = "<16s16sQQQ72s"
+_GPT_ENTRY_STRUCT = "<16s16sQQQ72s" # littel endian
 _GPT_ENTRY_SIZE = struct.calcsize(_GPT_ENTRY_STRUCT)
 
 partitionType = {
@@ -36,7 +37,8 @@ class GptParser:
 
 
 if __name__=="__main__":
-    filepath = './gpt_128.dd'
+    filename = sys.argv[1]
+    filepath = './' + filename
     gptparser = GptParser(filepath)
     # parse header
     """ Header Struct
@@ -60,7 +62,8 @@ if __name__=="__main__":
     startingLBA = gptheader[10]
     #parse partition entries ( 보통 2~33 sector 에 할당)
     i=0
-    while True:
+    while True: # partiton table entry 첫 16byte가 0일경우 break
+        
         partitionTableEntry = gptparser.getBytes((startingLBA)*512+i*128,_GPT_ENTRY_SIZE)
         """
             0. Partition Type GUID (16 Bytes)
@@ -78,7 +81,11 @@ if __name__=="__main__":
         fileSystem = partitionType.get(guid_str,"Unkwon")
         realOffsetSector = partitionTableEntry[2]
         size = (partitionTableEntry[3]-partitionTableEntry[2]+1)*512
-        print(f"GUID :{guid_str} | FileSystem : {fileSystem} | Offset(LBA) : {realOffsetSector} | Size(Byte) : {size}") 
+        print(f"partition {i}")
+        print(f"    GUID :{guid_str}") 
+        print(f"    FileSystem : {fileSystem}")
+        print(f"    Offset(LBA) : {realOffsetSector}")
+        print(f"    Size(Byte) : {size}")
         i+=1 
         
 
